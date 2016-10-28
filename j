@@ -2,21 +2,24 @@
 
 set -euo pipefail
 
-EDITOR="vi"
-
 DIR="$HOME/.journal"
 mkdir -p "$DIR"
 
-ARG=${1:-}
+FILENAME="$DIR/$(date +%Y%m%d).md"
 
-if [ "$ARG" = "last" ]; then
-  FILENAME="$DIR/$(ls --reverse "$DIR" | head -n 1)"
-else
-  FILENAME="$DIR/$(date +%Y%m%d_%H%I%S).md"
+NEWLINES=""
+if [ -s "$FILENAME" ]; then
+  NEWLINES="\n\n"
 fi
 
-$EDITOR "$FILENAME"
+touch "$FILENAME"
 
-#TIME=$(/usr/bin/time --format="%e" "$EDITOR" "$FILENAME" 2>&1 > /dev/null)
-#MIN=$(echo "($TIME+0.5)/60" | bc)
-#echo "\n\n#t:$MIN" >> "$FILENAME"
+echo -e "$NEWLINES### $(date "+%b %d, %H:%M")\n" >> "$FILENAME"
+
+vim '+normal Go' +star "$FILENAME"
+
+(
+  cd "$DIR"
+  git rev-parse --inside-work-tree >/dev/null 2>&1 || exit 0
+  git add . && git commit -m "update"
+)
